@@ -1,16 +1,21 @@
 'use client';
 
 import {
+    ChevronDown,
+    FlaskConical,
+    GitBranch,
     Home,
     LayoutDashboard,
+    ListTree,
     LucideIcon,
     Sparkles,
+    Table,
     User,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 
 import { setCookie } from '@/app/(protected)/org/actions';
 import { Button } from '@/components/ui/button';
@@ -30,6 +35,9 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarMenuSub,
+    SidebarMenuSubButton,
+    SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useOrganization } from '@/lib/providers/organization.provider';
@@ -83,16 +91,23 @@ function AppSidebar() {
             (organizations.length === 1 &&
                 organizations[0].id === personalOrg.id));
 
+    const searchParams = useSearchParams();
+    const traceView = searchParams.get('view');
+    const [traceOpen, setTraceOpen] = useState(false);
+
+    useEffect(() => {
+        if (pathname?.startsWith('/traceability')) {
+            setTraceOpen(true);
+        }
+    }, [pathname]);
+
     const navigateToPlayground = useCallback(() => {
         if (personalOrg) {
-            console.log('Navigating to playground:', personalOrg.id);
             // Only set preferred_org_id if there's no enterprise org
             if (!enterpriseOrg) {
                 setCookie('preferred_org_id', personalOrg.id);
             }
             router.push(`/org/${personalOrg.id}`);
-        } else {
-            console.log('No personal organization found');
         }
     }, [personalOrg, router, enterpriseOrg]);
 
@@ -135,13 +150,7 @@ function AppSidebar() {
                 }
 
                 if (targetOrgId) {
-                    console.log(
-                        'Navigating to pinned organization:',
-                        targetOrgId,
-                    );
                     router.push(`/org/${targetOrgId}`);
-                } else {
-                    console.log('No pinned or personal organization found');
                 }
             }
         } catch (err) {
@@ -237,6 +246,80 @@ function AppSidebar() {
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             )}
+
+                            <SidebarMenuItem className="mb-0.5">
+                                <SidebarMenuButton asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start"
+                                        onClick={() =>
+                                            setTraceOpen((open) => !open)
+                                        }
+                                    >
+                                        <GitBranch className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                                        <span className="text-xs font-medium">
+                                            Traceability
+                                        </span>
+                                        <ChevronDown
+                                            className={`ml-auto h-3 w-3 transition-transform ${
+                                                traceOpen ? 'rotate-180' : ''
+                                            }`}
+                                        />
+                                    </Button>
+                                </SidebarMenuButton>
+                                {traceOpen && (
+                                    <SidebarMenuSub>
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    pathname ===
+                                                        '/traceability' &&
+                                                    (!traceView ||
+                                                        traceView ===
+                                                            'matrix')
+                                                }
+                                            >
+                                                <Link href="/traceability?view=matrix">
+                                                    <Table className="h-3.5 w-3.5" />
+                                                    <span>Matrix View</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    pathname ===
+                                                        '/traceability' &&
+                                                    traceView ===
+                                                        'hierarchy'
+                                                }
+                                            >
+                                                <Link href="/traceability?view=hierarchy">
+                                                    <ListTree className="h-3.5 w-3.5" />
+                                                    <span>Hierarchy View</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                        <SidebarMenuSubItem>
+                                            <SidebarMenuSubButton
+                                                asChild
+                                                isActive={
+                                                    pathname ===
+                                                        '/traceability' &&
+                                                    traceView === 'test'
+                                                }
+                                            >
+                                                <Link href="/traceability?view=test">
+                                                    <FlaskConical className="h-3.5 w-3.5" />
+                                                    <span>Test Requirement</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                    </SidebarMenuSub>
+                                )}
+                            </SidebarMenuItem>
 
                             {/* Create Organization button (only if user has only personal org) */}
                             {/* {!isLoading && hasOnlyPersonalOrg && (
